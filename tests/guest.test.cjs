@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const crypto = require("node:crypto");
 const core = require("../guest-site/assets/app.js");
 const header = "year,subject,title,earned,possible,weight,date\n";
 const row = "2026-2027,Mathematics,Quiz,16,20,1,2026-10-01";
@@ -126,8 +127,11 @@ test("canonical static app disallows native submissions and network connections"
   assert.match(html, /form-action 'none'/);
   assert.match(html, /connect-src 'none'/);
   assert.match(html, /data-school-login=""/);
-  assert.match(html, /href="\.\/assets\/app\.css"/);
-  assert.match(html, /src="\.\/assets\/app\.js"/);
+  for (const filename of ["app.css", "app.js", "excel-report.js"]) {
+    const asset = fs.readFileSync(path.join(__dirname, "../guest-site/assets", filename));
+    const digest = crypto.createHash("sha256").update(asset).digest("hex").slice(0, 12);
+    assert.ok(html.includes(`./assets/${filename}?v=${digest}"`), `${filename} must use its current content hash to invalidate cached assets`);
+  }
   assert.ok(html.indexOf('./assets/excel-report.js') < html.indexOf('./assets/app.js'));
   assert.match(html, /id="export-excel"[^>]*disabled>↓ Download Excel report/);
   assert.match(html, /id="export-data"[^>]*>CSV backup/);
