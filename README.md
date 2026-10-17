@@ -151,8 +151,6 @@ GitHub stores and reviews the source code. [GitHub Pages is static hosting](http
 
 For editing and checks in GitHub's browser editor, see [the Codespaces instructions](docs/codespaces.md). Guest mode can use a static preview. The seeded Django demo account is restricted to loopback; an online school-mode preview requires approved OIDC and production settings.
 
-Want to test the app or change its code? Follow [CONTRIBUTING.md](CONTRIBUTING.md) for bug reports, forks, tests, and pull requests. Direct collaborator access requires an invitation from the repository owner.
-
 ## Creator privacy
 
 The public app can use a project name without displaying its creator's personal name. That does not guarantee anonymity from school IT, GitHub, the host, or the domain provider. School SSO is controlled by the school, and its administrators can inspect sign-in activity. The operator's identity and contact details may be needed privately for approval and support.
