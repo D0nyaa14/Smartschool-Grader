@@ -16,7 +16,7 @@ jobs:
         with:
           persist-credentials: false
       # GitHub's hosted Ubuntu runner includes Node.js. No packages are needed.
-      - run: node --test tests/guest.test.cjs
+      - run: node --test tests/guest.test.cjs tests/excel-report.test.js
 
   test:
     runs-on: ubuntu-latest

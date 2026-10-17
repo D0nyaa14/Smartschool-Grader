@@ -15,10 +15,9 @@ class SubjectForm(forms.ModelForm):
 class GradeForm(forms.ModelForm):
     class Meta:
         model = Assessment
-        fields = ["title", "earned", "possible", "weight", "date"]
+        fields = ["title", "earned", "possible", "date"]
         labels = {"earned": "Points earned", "possible": "Maximum points"}
         widgets = {"date": forms.DateInput(attrs={"type": "date"})}
-        help_texts = {"weight": "Relative assessment weight. Use maximum points here for points-based averaging."}
 
 
 class ImportForm(forms.Form):
@@ -32,10 +31,10 @@ class TargetForm(forms.Form):
 class FutureForm(forms.Form):
     earned = forms.DecimalField(label="Expected points", min_value=0, max_value=Decimal("999999"), max_digits=10, decimal_places=4)
     possible = forms.DecimalField(label="Maximum points", min_value=Decimal("0.0001"), max_value=Decimal("999999"), max_digits=10, decimal_places=4)
-    weight = forms.DecimalField(label="Weight", min_value=Decimal("0.0001"), max_value=Decimal("999999"), max_digits=10, decimal_places=4)
 
     def clean(self):
         data = super().clean()
+        data["weight"] = Decimal(1)
         if data.get("earned") is not None and data.get("possible") is not None and data["earned"] > data["possible"]:
             self.add_error("earned", "Expected points cannot exceed maximum points.")
         return data

@@ -10,7 +10,7 @@ No site has been published by preparing these files. You decide when to run the 
 2. Open the repository's **Settings → Pages**. Under **Build and deployment → Source**, choose **GitHub Actions**. GitHub Free supports Pages from public repositories; publishing from a private repository requires a qualifying plan, such as Pro, Team, or Enterprise. Check [GitHub's Pages availability](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages) for your account. Do not change repository visibility automatically: a public repository exposes its code, GitHub handle, and commit metadata, and a Pages site may be public even when its source repository is private.
 3. Open **Actions → Publish guest dashboard to GitHub Pages**. Choose **Run workflow**, select the intended branch, and confirm **Run workflow**. The workflow file must be present on the default branch for this manual button to appear.
 4. Wait for the workflow to succeed. Open its deployment link, or return to **Settings → Pages** for the published address. A project site usually looks like `https://YOUR-ACCOUNT.github.io/YOUR-REPOSITORY/`.
-5. Open that link in a fresh browser profile. Add a synthetic grade, import/export a sample CSV, and try a prediction. Verify that the checkbox **Remember grades on this browser** is initially unchecked. Share the link after checking its behavior.
+5. Open that link in a fresh browser profile. Add a synthetic grade, import/export a sample CSV, and try a prediction. Choose a year and check **Download Excel report** too. Verify that the checkbox **Remember grades on this browser** is initially unchecked. Share the link after checking its behavior.
 
 The workflow does not deploy on ordinary pushes or pull requests. To publish an update, review and commit the change, then run it again. Its token has only the repository read permission and Pages deployment permissions needed by the official actions. You do not need to create a personal access token or add any school/client secrets.
 
@@ -23,6 +23,12 @@ Guest mode needs no school account. Grades stay in JavaScript memory by default 
 The supplied guest app makes no backend grade requests and includes no analytics, ads, or CDN dependencies. Hosting providers can still receive normal web requests and connection information. Public branding and guest mode do not guarantee anonymity from GitHub, a host, a network operator, or school IT. A school can block a site through its normal web policy; this project provides no bypass.
 
 Guest records and school-account records are separate. Browser storage is also specific to the browser profile and site origin, so another device or a different site address will not show the same guest workspace. Signing in never automatically uploads, merges, or transfers guest data. To move grades deliberately, export a CSV from one mode and import it into the other. Review the file first.
+
+## Excel report or CSV backup
+
+**Download Excel report** downloads a genuine `.xlsx` workbook for the selected school year, generated in the browser without sending grades to a server. It includes recorded grades only, excluding simulator predictions. **Overview** summarizes subject averages; **Progress** provides supporting grade/progress detail and native charts. Editable score inputs feed workbook formulas, so changes can recalculate in Excel. There is no adjustable weight setting; calculations continue to respect stored/imported weights. Workbook edits do not synchronize with the app, and the app cannot import this workbook.
+
+**CSV backup** keeps the plain grade records from all school years for the app's CSV import/export workflow. It has no workbook formatting, formulas, or charts. Use it for a restore or deliberate transfer between guest and school mode. Keep either downloaded file private, especially on a shared computer.
 
 ## Optional school sign-in link
 

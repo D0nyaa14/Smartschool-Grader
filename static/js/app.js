@@ -18,22 +18,20 @@ document.querySelectorAll("[data-simulator]").forEach((form) => {
     for (let index = 0; index < 3; index += 1) {
       const scoreField = form.querySelector(`[name="future-${index}-earned"]`);
       const possibleField = form.querySelector(`[name="future-${index}-possible"]`);
-      const weightField = form.querySelector(`[name="future-${index}-weight"]`);
-      if (!scoreField || !possibleField || !weightField) continue;
+      if (!scoreField || !possibleField) continue;
       const earnedText = scoreField.value.trim();
       const possibleText = possibleField.value.trim();
-      const weightText = weightField.value.trim();
-      const fieldsValid = scoreField.validity.valid && possibleField.validity.valid && weightField.validity.valid;
-      if (!earnedText && !possibleText && !weightText) {
+      const fieldsValid = scoreField.validity.valid && possibleField.validity.valid;
+      if (!earnedText && !possibleText) {
         if (!fieldsValid) invalid = true;
         continue;
       }
       const earned = Number(earnedText);
       const possible = Number(possibleText);
-      const weight = Number(weightText);
-      if (!earnedText || !possibleText || !weightText || !Number.isFinite(earned) || !Number.isFinite(possible)
-          || !Number.isFinite(weight) || earned < 0 || possible < 0.0001 || earned > possible || weight < 0.0001
-          || earned > 999999 || possible > 999999 || weight > 999999 || !fieldsValid) {
+      const weight = 1;
+      if (!earnedText || !possibleText || !Number.isFinite(earned) || !Number.isFinite(possible)
+          || earned < 0 || possible < 0.0001 || earned > possible
+          || earned > 999999 || possible > 999999 || !fieldsValid) {
         invalid = true;
         continue;
       }
@@ -64,9 +62,9 @@ document.querySelectorAll("[data-simulator]").forEach((form) => {
     if (target !== null && Number.isFinite(target) && target >= 0 && target <= 100) {
       const needed = (target * (existingWeight + futureWeight) - weightedTotal) / futureWeight;
       if (needed > 100) {
-        targetNote.textContent = `A ${formatter.format(target)}% target needs more than 100% across these future weights. Try adding more future assessments.`;
+        targetNote.textContent = `A ${formatter.format(target)}% target needs more than 100% across these future assessments. Try adding more future assessments.`;
       } else if (needed <= 0) {
-        targetNote.textContent = `Your ${formatter.format(target)}% target is already secured for these future weights, even with a 0% future average.`;
+        targetNote.textContent = `Your ${formatter.format(target)}% target is already secured for these future assessments, even with a 0% future average.`;
       } else {
         targetNote.textContent = `You need a weighted average of ${formatter.format(needed)}% across these future assessments to reach ${formatter.format(target)}%.`;
       }

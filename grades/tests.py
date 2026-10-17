@@ -72,6 +72,8 @@ class GradeBoundaryTests(TestCase):
         self.assertNotContains(response, "Private quiz")
         self.assertNotContains(response, "student-alice")
         self.assertContains(response, "/static/guest/app.js")
+        self.assertContains(response, "/static/guest/excel-report.js")
+        self.assertNotContains(response, "./assets/excel-report.js")
         self.assertContains(response, 'data-school-login="/auth/login/"')
         self.assertNotIn("sessionid", response.cookies)
         self.assertNotIn("_auth_user_id", visitor.session)
@@ -97,11 +99,22 @@ class GradeBoundaryTests(TestCase):
         self.assertTrue(Assessment.objects.filter(pk=self.private_grade.pk).exists())
 
     def test_forged_owner_and_subject_are_ignored(self):
-        response = self.client.post(reverse("grades:grade_create", args=[self.mine.pk]), {"title": "New grade", "earned": 5, "possible": 10, "weight": 1, "date": "2026-10-13", "subject": self.theirs.pk, "owner": self.bob.pk, "source": "csv"})
+        response = self.client.post(reverse("grades:grade_create", args=[self.mine.pk]), {"title": "New grade", "earned": 5, "possible": 10, "weight": 999, "date": "2026-10-13", "subject": self.theirs.pk, "owner": self.bob.pk, "source": "csv"})
         self.assertEqual(response.status_code, 302)
         added = Assessment.objects.get(title="New grade")
         self.assertEqual(added.subject_id, self.mine.pk)
         self.assertEqual(added.source, "manual")
+        self.assertEqual(added.weight, 1)
+
+    def test_manual_edit_preserves_saved_weight_without_showing_a_control(self):
+        url = reverse("grades:grade_update", args=[self.grade.pk])
+        response = self.client.get(url)
+        self.assertNotContains(response, 'name="weight"')
+        response = self.client.post(url, {"title": "Edited quiz", "earned": 9, "possible": 10, "weight": 999, "date": "2026-10-12"})
+        self.assertEqual(response.status_code, 302)
+        self.grade.refresh_from_db()
+        self.assertEqual(self.grade.weight, 2)
+        self.assertEqual(self.grade.earned, 9)
 
     def test_duplicate_subject_is_a_form_error(self):
         response = self.client.post(reverse("grades:subject_create"), {"name": "Mathematics", "year": "2026-2027"})
@@ -112,8 +125,10 @@ class GradeBoundaryTests(TestCase):
     def test_simulation_does_not_save_hypothetical_grades(self):
         payload = {"target_percentage": "85", "future-TOTAL_FORMS": "3", "future-INITIAL_FORMS": "0", "future-MIN_NUM_FORMS": "0", "future-MAX_NUM_FORMS": "3", "future-0-earned": "10", "future-0-possible": "10", "future-0-weight": "2"}
         response = self.client.post(reverse("grades:subject_detail", args=[self.mine.pk]), payload)
-        self.assertEqual(response.context["simulation"]["projected_percentage"], 90)
-        self.assertEqual(response.context["simulation"]["needed_percentage"], 90)
+        self.assertAlmostEqual(response.context["simulation"]["projected_percentage"], Decimal(260) / 3)
+        self.assertEqual(response.context["simulation"]["needed_percentage"], 95)
+        self.assertNotContains(response, 'name="future-0-weight"')
+        self.assertEqual(response.context["future_formset"].cleaned_data[0]["weight"], 1)
         self.assertEqual(self.mine.assessments.count(), 1)
         payload["future-0-possible"] = "0"
         response = self.client.post(reverse("grades:subject_detail", args=[self.mine.pk]), payload)
@@ -130,8 +145,8 @@ class GradeBoundaryTests(TestCase):
         self.assertIsNone(response.context["current_percentage"])
 
     def test_unsafe_score_inputs_show_errors(self):
-        for earned, possible, weight in [("NaN", "10", "1"), ("1", "0", "1"), ("11", "10", "1"), ("1", "10", "-1")]:
-            response = self.client.post(reverse("grades:grade_create", args=[self.mine.pk]), {"title": "Invalid", "earned": earned, "possible": possible, "weight": weight, "date": "2026-10-13"})
+        for earned, possible in [("NaN", "10"), ("1", "0"), ("11", "10"), ("-1", "10")]:
+            response = self.client.post(reverse("grades:grade_create", args=[self.mine.pk]), {"title": "Invalid", "earned": earned, "possible": possible, "date": "2026-10-13"})
             self.assertEqual(response.status_code, 200)
             self.assertTrue(response.context["form"].errors)
         self.assertFalse(Assessment.objects.filter(title="Invalid").exists())

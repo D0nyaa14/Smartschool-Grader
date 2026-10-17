@@ -49,6 +49,14 @@
     return {year, subject: cleanText(record.subject, "Subject", 100), title: cleanText(record.title, "Assessment title", 120), earned, possible, weight, date};
   }
 
+  function manualRecord(data, subject, existingGrade = null) {
+    return normalizeRecord({...data, subject: subject.name, year: subject.year, weight: existingGrade ? existingGrade.weight : 1});
+  }
+
+  function futureRecord(data, subject, date) {
+    return normalizeRecord({...data, year: subject.year, subject: subject.name, title: "Future assessment", date, weight: 1});
+  }
+
   function weightedAverage(records) {
     let weighted = 0;
     let weight = 0;
@@ -145,6 +153,16 @@
     return lines.join("\r\n") + "\r\n";
   }
 
+  function reportSnapshot(subjects, year, generatedAt = new Date()) {
+    const selected = subjects.filter((subject) => subject.year === year);
+    return {
+      subjects: selected.map(({id, name, year: schoolYear}) => ({id, name, year: schoolYear})),
+      grades: selected.flatMap((subject) => subject.assessments.map(({id, title, earned, possible, weight, date, source}) => ({id, subjectId: subject.id, title, earned, possible, weight, date, source}))),
+      year,
+      generatedAt,
+    };
+  }
+
   function validateStored(value) {
     requireCondition(value && value.version === 1 && Array.isArray(value.subjects) && value.subjects.length <= MAX_SUBJECTS, "Saved guest data has an unsupported format.");
     let total = 0;
@@ -169,7 +187,7 @@
     return {version: 1, subjects};
   }
 
-  const core = {COLUMNS, MAX_BYTES, MAX_ROWS, numeric, validYear, validDate, normalizeRecord, weightedAverage, simulate, parseCsv, parseImport, spreadsheetSafe, exportCsv, validateStored};
+  const core = {COLUMNS, MAX_BYTES, MAX_ROWS, numeric, validYear, validDate, normalizeRecord, manualRecord, futureRecord, weightedAverage, simulate, parseCsv, parseImport, spreadsheetSafe, exportCsv, reportSnapshot, validateStored};
   if (typeof module !== "undefined" && module.exports) module.exports = core;
   if (typeof document === "undefined") return;
 
@@ -266,15 +284,20 @@
       const progress = makeElement("progress");
       progress.max = 100;
       progress.value = average || 0;
-      progress.setAttribute("aria-label", `${subject.name}: ${average === null ? "no average yet" : percent(average) + " weighted average"}`);
+      progress.setAttribute("aria-label", `${subject.name}: ${average === null ? "no average yet" : percent(average) + " average"}`);
       const metadata = makeElement("div", "subject-meta");
-      metadata.append(makeElement("span", "", `${subject.assessments.length} assessment${subject.assessments.length === 1 ? "" : "s"}`), makeElement("span", "", average === null ? "Ready for your first grade" : "Weighted average"));
+      metadata.append(makeElement("span", "", `${subject.assessments.length} assessment${subject.assessments.length === 1 ? "" : "s"}`), makeElement("span", "", average === null ? "Ready for your first grade" : "Subject average"));
       const bottom = makeElement("div", "subject-card-bottom");
       bottom.append(makeButton("View subject →", "text-button", () => openSubject(subject.id), `View ${subject.name}`), makeButton("＋ Add grade", "text-button", () => { selectedSubjectId = subject.id; openGrade(); }, `Add grade for ${subject.name}`));
       card.append(top, heading, makeElement("div", "subject-year", subject.year), score, progress, metadata, bottom);
       return card;
     }));
     byId("export-data").disabled = gradeCount() === 0;
+    for (const id of ["export-excel", "export-excel-top"]) {
+      byId(id).disabled = !subjects.some((subject) => subject.assessments.length > 0);
+      byId(id).setAttribute("aria-label", `Download Excel report for ${selectedYear}`);
+    }
+    byId("export-scope").textContent = `Excel: ${selectedYear} recorded grades only; simulations excluded. CSV backup: all school years.`;
   }
   function renderDetail() {
     const subject = selectedSubject();
@@ -300,7 +323,7 @@
         saveState(); renderAll(); resetSimulation(); announce("Grade removed. Your average has been recalculated.");
       }, `Remove ${grade.title}`));
       actions.append(buttons);
-      row.append(title, score, makeElement("td", "numeric", `${format.format(grade.weight)}×`), actions);
+      row.append(title, score, actions);
       return row;
     }));
   }
@@ -340,8 +363,8 @@
     byId("grade-subject-name").textContent = subject.name;
     byId("grade-dialog-title").textContent = grade ? "Edit your grade" : "Add a grade";
     byId("grade-save").textContent = grade ? "Save changes ✓" : "Add grade ✓";
-    for (const name of ["title", "earned", "possible", "weight", "date"]) {
-      byId(`grade-${name}`).value = grade ? grade[name] : name === "weight" ? "1" : name === "date" ? todayText : "";
+    for (const name of ["title", "earned", "possible", "date"]) {
+      byId(`grade-${name}`).value = grade ? grade[name] : name === "date" ? todayText : "";
     }
     showError("grade-error", "");
     byId("grade-dialog").showModal();
@@ -379,7 +402,9 @@
       requireCondition(!!subject, "Choose a subject first.");
       requireCondition(editingGradeId || gradeCount() < MAX_GRADES, `This workspace supports up to ${MAX_GRADES} assessments. Export a copy and clear older data to make space.`);
       const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-      const record = normalizeRecord({...data, subject: subject.name, year: subject.year});
+      const existingGrade = editingGradeId ? subject.assessments.find((grade) => grade.id === editingGradeId) : null;
+      requireCondition(!editingGradeId || !!existingGrade, "This assessment is no longer available. Reopen the subject and try again.");
+      const record = manualRecord(data, subject, existingGrade);
       const grade = {id: editingGradeId || newId(), title: record.title, earned: record.earned, possible: record.possible, weight: record.weight, date: record.date, source: "Manual entry"};
       if (editingGradeId) subject.assessments = subject.assessments.map((item) => item.id === editingGradeId ? grade : item);
       else subject.assessments.push(grade);
@@ -398,7 +423,7 @@
     const container = byId("future-rows");
     container.append(makeElement("div", "future-label", `Future assessment ${index + 1}`));
     const row = makeElement("div", "future-row");
-    for (const [name, labelText, minimum] of [["earned", "Expected points", "0"], ["possible", "Maximum points", "0.0001"], ["weight", "Weight", "0.0001"]]) {
+    for (const [name, labelText, minimum] of [["earned", "Expected points", "0"], ["possible", "Maximum points", "0.0001"]]) {
       const field = makeElement("div", "field");
       const label = makeElement("label", "", labelText);
       const input = makeElement("input");
@@ -416,16 +441,16 @@
       const future = [];
       for (let index = 0; index < 3; index += 1) {
         const record = {};
-        for (const name of ["earned", "possible", "weight"]) record[name] = byId(`future-${index}-${name}`).value.trim();
+        for (const name of ["earned", "possible"]) record[name] = byId(`future-${index}-${name}`).value.trim();
         if (Object.values(record).every((value) => value === "")) continue;
-        requireCondition(Object.values(record).every((value) => value !== ""), `Future assessment ${index + 1}: enter points earned, maximum points, and weight, or leave the whole row blank.`);
-        const parsed = normalizeRecord({...record, year: subject.year, subject: subject.name, title: "Future assessment", date: todayText});
+        requireCondition(Object.values(record).every((value) => value !== ""), `Future assessment ${index + 1}: enter points earned and maximum points, or leave the whole row blank.`);
+        const parsed = futureRecord(record, subject, todayText);
         future.push(parsed);
       }
       const target = numeric(byId("target").value, "Target average");
       const result = simulate(subject.assessments, future, target);
       byId("projected-average").textContent = percent(result.projected);
-      byId("target-result").textContent = result.status === "impossible" ? `A ${format.format(target)}% target needs more than 100% across these future weights. Add more future assessments or adjust your target.` : result.status === "already" ? `Your ${format.format(target)}% target is secured for these future weights, even with a 0% future average.` : `You need a weighted average of ${format.format(result.needed)}% across these future assessments to reach ${format.format(target)}%.`;
+      byId("target-result").textContent = result.status === "impossible" ? `A ${format.format(target)}% target needs more than 100% across these future assessments. Add more future assessments or adjust your target.` : result.status === "already" ? `Your ${format.format(target)}% target is secured for these future assessments, even with a 0% future average.` : `You need an average of ${format.format(result.needed)}% across these future assessments to reach ${format.format(target)}%.`;
       byId("simulation-result").hidden = false; showError("simulation-error", "");
     } catch (error) { byId("simulation-result").hidden = true; showError("simulation-error", error.message); }
   });
@@ -466,6 +491,29 @@
     finally { importBusy = false; byId("import-submit").disabled = false; }
   });
 
+  function downloadExcelReport() {
+    const buttons = [byId("export-excel"), byId("export-excel-top")];
+    buttons.forEach((button) => { button.disabled = true; });
+    try {
+      const snapshot = reportSnapshot(state.subjects, selectedYear);
+      requireCondition(snapshot.grades.length > 0, "Add a recorded grade for the selected school year before downloading an Excel report.");
+      requireCondition(globalThis.GradebookExcel && typeof globalThis.GradebookExcel.buildReport === "function", "The Excel report tool could not load. Refresh the page, or use CSV backup to keep your grades.");
+      const bytes = globalThis.GradebookExcel.buildReport(snapshot);
+      requireCondition(bytes instanceof Uint8Array && bytes.byteLength > 0, "The Excel report could not be created. Use CSV backup to keep your grades.");
+      const blob = new Blob([bytes], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+      const url = URL.createObjectURL(blob);
+      const link = makeElement("a");
+      link.href = url; link.download = `gradebook-progress-${selectedYear}.xlsx`; document.body.append(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      announce(`Your ${selectedYear} Excel report was generated locally. It contains recorded grades only; simulations are excluded. Store the downloaded file somewhere private.`);
+    } catch (error) {
+      announce(`Excel report unavailable: ${error.message || "Please try again or use CSV backup."} Your saved grades have not changed.`, true);
+    } finally {
+      buttons.forEach((button) => { button.disabled = !state.subjects.some((subject) => subject.year === selectedYear && subject.assessments.length > 0); });
+    }
+  }
+  for (const id of ["export-excel", "export-excel-top"]) byId(id).addEventListener("click", downloadExcelReport);
+
   byId("export-data").addEventListener("click", () => {
     const blob = new Blob([exportCsv(state.subjects)], {type: "text/csv;charset=utf-8"});
     const url = URL.createObjectURL(blob);
@@ -500,9 +548,9 @@
   function loadSamples() {
     if (state.subjects.length && !confirm("Add synthetic sample subjects to your current guest workspace? Your existing grades will stay.")) return;
     const definitions = [
-      {name: "Mathematics · sample", grades: [["Algebra quiz", 16, 20, 1], ["Problem solving", 34, 40, 2], ["Geometry test", 42, 50, 2]]},
-      {name: "Biology · sample", grades: [["Cell biology", 18, 20, 1], ["Lab report", 25, 30, 2]]},
-      {name: "English · sample", grades: [["Reading response", 15, 20, 1], ["Essay", 34, 40, 3]]},
+      {name: "Mathematics · sample", grades: [["Algebra quiz", 16, 20, 1], ["Problem solving", 34, 40, 1], ["Geometry test", 42, 50, 1]]},
+      {name: "Biology · sample", grades: [["Cell biology", 18, 20, 1], ["Lab report", 25, 30, 1]]},
+      {name: "English · sample", grades: [["Reading response", 15, 20, 1], ["Essay", 34, 40, 1]]},
     ];
     let added = 0;
     for (const definition of definitions) {

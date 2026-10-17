@@ -19,6 +19,7 @@ Guest and school records are separate. Signing in does not automatically transfe
 - A school dashboard, filtered by the signed-in student and academic year.
 - A guest dashboard with temporary browser data and optional explicit browser storage.
 - Manual grade entry and CSV import/export, with server-side validation.
+- A guest Excel progress report for the selected year, with formulas and native charts.
 - Weighted subject percentages and a future-score simulator.
 - School OIDC sign-in with one configured issuer and stable `(issuer, subject)` identities.
 - A local-only demo with synthetic records, tests, GitHub Actions, and a Docker server image.
@@ -33,6 +34,10 @@ The standalone guest app is in `guest-site/` and needs no build or school creden
 For a local preview, run `python -m http.server 8000 --bind 127.0.0.1 --directory guest-site` from this project folder and open <http://127.0.0.1:8000>. The full Django app also offers **Continue as guest** at `/guest/`.
 
 Guest grades are temporary by default. **Remember grades on this browser** opts into local browser storage; **Clear all guest data** removes the current and remembered guest records. Neither provides an account backup. Guest mode does not guarantee anonymity from the site host, network, or school.
+
+Use **Download Excel report** for a readable `.xlsx` progress report of the selected school year. It includes recorded grades, excluding simulator predictions. The workbook opens with **Overview** and **Progress** sheets, subject averages, and native charts. Its score inputs and formulas let you explore changes in Excel after downloading, without an adjustable weight setting. Stored weights remain respected in its calculations. Edits stay in that workbook and do not synchronize back to the app.
+
+Use **CSV backup** to move or restore grade records across all school years. CSV is a plain data format without workbook styling, formulas, or charts, and Excel's handling of its separators can depend on local settings. The app imports CSV; it does not import the Excel progress workbook.
 
 ## Run the local demo
 
@@ -84,7 +89,11 @@ The SQLite database is local to this installation. Stopping the server preserves
 
 ## Add grades
 
-In school mode, sign in and choose an academic year; in guest mode, continue without an account. Add grades manually or import a CSV. The included `sample-grades.csv` contains synthetic examples. The CSV header is exactly:
+In school mode, sign in and choose an academic year; in guest mode, continue without an account. Add grades manually or import a CSV.
+
+New manual grades and new simulated assessments count equally. There is no weight option to fill in. Editing an existing grade preserves its saved weight, and CSV imports retain their supplied weights, keeping existing averages intact.
+
+The included `sample-grades.csv` contains synthetic examples. The CSV header is exactly:
 
 ```csv
 year,subject,title,earned,possible,weight,date
@@ -102,7 +111,7 @@ For each subject and year:
 percentage = 100 × sum((earned / possible) × weight) / sum(weight)
 ```
 
-For example, `16/20` with weight `1` and `72/100` with weight `3` gives **74%**. For a total-points calculation, set each grade's weight equal to its `possible` points. The starter does not implement category weighting, grading curves, dropped assignments, or a school's special rounding rules. Predictions are estimates using this formula.
+For new manual grades, each weight is `1`, so `16/20` and `72/100` average **76%**. Existing or imported records can retain other weights: those same scores with weights `1` and `3` give **74%**. The CSV `weight` column is retained for backup compatibility and authorized imports. The starter does not implement category weighting, grading curves, dropped assignments, or a school's special rounding rules. Predictions are estimates using the saved grades and equally counted new simulations.
 
 ## Connect official school sign-in
 
@@ -141,6 +150,8 @@ The test workflow runs tests, migration checks, and a dependency audit on pushes
 GitHub stores and reviews the source code. [GitHub Pages is static hosting](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages) and can run the standalone guest app. School sign-in and saved account records require the Django backend and a persistent database on an approved host; Pages cannot run that backend or keep SSO secrets.
 
 For editing and checks in GitHub's browser editor, see [the Codespaces instructions](docs/codespaces.md). Guest mode can use a static preview. The seeded Django demo account is restricted to loopback; an online school-mode preview requires approved OIDC and production settings.
+
+Want to test the app or change its code? Follow [CONTRIBUTING.md](CONTRIBUTING.md) for bug reports, forks, tests, and pull requests. Direct collaborator access requires an invitation from the repository owner.
 
 ## Creator privacy
 

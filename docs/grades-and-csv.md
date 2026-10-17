@@ -4,6 +4,8 @@ In school mode, each saved grade belongs to one signed-in student and one academ
 
 Signing in never transfers guest records automatically. Export/import a CSV deliberately if you want to move records between modes. Guest data is temporary by default; remember it only through the explicit browser-storage option, and avoid that option on shared devices.
 
+New manual grades and new simulated assessments each count equally with weight `1`; their forms have no weight control. Editing an existing grade preserves its stored weight. Existing and imported weights continue to affect averages, preventing a silent change to previously saved results.
+
 ## CSV format
 
 Use a UTF-8 comma-separated file with this exact header:
@@ -22,7 +24,7 @@ year,subject,title,earned,possible,weight,date
 | `title` | Assignment or exam name. |
 | `earned` | Points earned, at least zero and no more than `possible`. |
 | `possible` | Positive maximum points. |
-| `weight` | Positive relative contribution of this assessment. |
+| `weight` | Positive saved/imported contribution of this assessment; retained for backup compatibility and authorized imports. New manual grades use `1`. |
 | `date` | Assessment date in `YYYY-MM-DD` format. |
 
 Use a dot for decimals, with at most four decimal places. If a title includes a comma, quote the field: `"Quiz, chapter 2"`. Do not add student IDs, passwords, access tokens, or extra columns. This importer is intended for each student's own records, not a class roster.
@@ -46,13 +48,13 @@ A quiz worth `16/20`, weight `1`, and an exam worth `72/100`, weight `3` give:
 100 × ((16/20 × 1) + (72/100 × 3)) ÷ (1 + 3) = 74%
 ```
 
-Use weight `1` for equally weighted assessments, regardless of point scales. For a points-based average, use each assessment's maximum points as its weight: `16/20` with weight `20` and `72/100` with weight `100` give `88/120 = 73.33%`.
+New manual assessments use weight `1`, regardless of point scales: `16/20` and `72/100` therefore average `76%`. An existing or authorized imported points-based record can instead have each assessment's maximum points as its saved weight: `16/20` with weight `20` and `72/100` with weight `100` give `88/120 = 73.33%`. The app preserves these imported values; students do not need to set a weight in the manual-entry form.
 
 Do not mix these methods unintentionally. A school's category weights, exam rules, resits, exemptions, extra credit, dropped grades, or official rounding rules require additional code. Decimal calculations are used on the server, and the display rounds percentages for readability.
 
 ## Future-score simulation
 
-Select a subject and enter hypothetical future assessments using the same earned/possible/weight model. The simulator combines them with existing grades for that subject and year, then shows the estimated result. A prediction does not create or edit a saved assessment.
+Select a subject and enter the expected points and maximum points for hypothetical future assessments. Each new simulated assessment counts once with weight `1`. The simulator combines them with the existing grades and their saved weights for that subject and year, then shows the estimated result. A prediction does not create or edit a saved assessment.
 
 The result is a mathematical estimate. It is only as accurate as the selected grades and weights and does not guarantee an official school result.
 

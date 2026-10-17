@@ -6,11 +6,15 @@ This project has **two free modes**. There are no ads, payments, trackers, or sc
 
 Guest mode needs no school approval for sign-in because it has no accounts. Students enter grades or import their own CSV and use the score simulator. A school's usual website restrictions can still apply.
 
+New grades you enter and new simulated scores count equally; there is no weight option to set. Existing and imported grades keep their saved weights when calculating averages.
+
 1. Put this project's files in your GitHub repository, including `.github/`.
 2. Follow [Publish guest mode](docs/github-pages.md).
 3. Share the published website link with students. They do not need GitHub accounts or an extension.
 
 Guest grades stay in the current tab unless the student explicitly chooses browser saving. Export a CSV to keep a backup. Saving on a shared computer is unsuitable because other people using that browser can see the records.
+
+For a clear report in Excel, choose the school year and use **Download Excel report**. The `.xlsx` file contains **Overview** and **Progress** sheets with subject averages, formulas, and charts for recorded grades; simulator predictions are excluded. Editing score inputs in the workbook recalculates its results; it does not change the app's grades. There is no adjustable weight setting, and saved/imported weights remain respected. Use **CSV backup** for all school years when you want to import records back into the app. The Excel workbook cannot be imported back.
 
 To try it before publishing, open a terminal in `guest-site/`, run `python -m http.server 8080 --bind 127.0.0.1`, and open <http://127.0.0.1:8080>. No Python packages are needed for this guest preview. Stop it with Ctrl+C.
 

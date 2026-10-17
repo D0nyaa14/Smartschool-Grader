@@ -24,6 +24,7 @@ def guest(request):
     page = (settings.BASE_DIR / "guest-site" / "index.html").read_text(encoding="utf-8")
     page = page.replace("./assets/app.css", static("guest/app.css"))
     page = page.replace("./assets/app.js", static("guest/app.js"))
+    page = page.replace("./assets/excel-report.js", static("guest/excel-report.js"))
     page = page.replace('data-school-login=""', 'data-school-login="' + reverse("identity:login") + '"')
     return HttpResponse(page)
 
@@ -105,7 +106,7 @@ def subject_create(request):
 @require_http_methods(["GET", "POST"])
 def grade_create(request, pk):
     subject = owned_subject(request, pk)
-    form = GradeForm(request.POST or None, initial={"date": date.today(), "weight": 1})
+    form = GradeForm(request.POST or None, initial={"date": date.today()})
     if request.method == "POST" and form.is_valid():
         grade = form.save(commit=False)
         grade.subject, grade.source = subject, Assessment.Source.MANUAL
