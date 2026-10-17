@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Confirm removal · Gradebook{% endblock %}
+{% block content %}
+<a class="breadcrumb" href="{{ cancel_url }}">{% include 'includes/icon.html' with name='back' size='15' %}Go back</a>
+<section class="panel delete-panel"><div class="panel-body"><div class="delete-warning">{% include 'includes/icon.html' with name='trash' size='25' %}</div><div class="eyebrow">Make a little space</div><h1>Remove this {{ kind }}?</h1><p class="delete-description">{% if kind == 'subject' %}<strong>{{ object.name }}</strong> and all its recorded grades will be permanently removed from your account.{% else %}<strong>{{ object.title }}</strong> will be permanently removed. Your subject average will be recalculated.{% endif %}</p><form method="post">{% csrf_token %}<div class="form-actions"><button class="button button-danger" type="submit">Remove {{ kind }}</button><a class="button button-secondary" href="{{ cancel_url }}">Keep it</a></div></form></div></section>
+{% endblock %}

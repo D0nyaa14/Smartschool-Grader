@@ -1,0 +1,62 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="A private student grade tracker with weighted averages and future-score planning.">
+  <title>{% block title %}Gradebook{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'js/app.js' %}" defer></script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
+  {% block body %}
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" href="{% url 'grades:dashboard' %}"><span class="brand-mark">{% include 'includes/icon.html' with name='book' size='23' %}</span>Gradebook<span class="sr-only"> home</span></a>
+      <div class="nav-label">Your workspace</div>
+      <nav class="primary-nav">
+        <a class="nav-link{% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'subject_detail' %} active{% endif %}" href="{% url 'grades:dashboard' %}">{% include 'includes/icon.html' with name='grid' size='18' %}Overview</a>
+        <a class="nav-link{% if request.resolver_match.url_name == 'import_csv' %} active{% endif %}" href="{% url 'grades:import_csv' %}">{% include 'includes/icon.html' with name='upload' size='18' %}Import grades</a>
+        <a class="nav-link" href="{% url 'grades:export_csv' %}">{% include 'includes/icon.html' with name='download' size='18' %}Export my grades</a>
+        <a class="nav-link{% if request.resolver_match.url_name == 'delete_data' %} active{% endif %}" href="{% url 'grades:delete_data' %}">{% include 'includes/icon.html' with name='settings' size='18' %}Manage my data</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="privacy-note">{% include 'includes/icon.html' with name='shield' size='22' %}<strong>Your grades. Your space.</strong>Other students cannot access your grades. The service operator manages stored records.</div>
+        <div class="account">
+          <span class="avatar" aria-hidden="true">{{ user.first_name|default:'S'|first|upper }}</span>
+          <div class="account-copy">
+            <div class="account-name">{{ user.first_name|default:'Student' }}</div>
+            <form method="post" action="{% url 'identity:logout' %}">{% csrf_token %}<button class="signout" type="submit">Sign out</button></form>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <div class="main-area">
+      <header class="mobile-header">
+        <a class="brand" href="{% url 'grades:dashboard' %}"><span class="brand-mark">{% include 'includes/icon.html' with name='book' size='20' %}</span>Gradebook</a>
+        <nav class="mobile-nav" aria-label="Mobile navigation">
+          <a class="mobile-import" href="{% url 'grades:import_csv' %}">Import</a>
+          <a href="{% url 'grades:delete_data' %}">My data</a>
+          <form method="post" action="{% url 'identity:logout' %}">{% csrf_token %}<button type="submit" aria-label="Sign out">{% include 'includes/icon.html' with name='logout' size='18' %}</button></form>
+        </nav>
+      </header>
+      <div class="topbar">
+        <span class="topbar-label">Your learning, at a glance</span>
+        <div class="topbar-right">
+          {% if request.session.identity_demo %}<span class="demo-badge">Local demo · sample records only</span>{% endif %}
+          <span class="private-badge"><span class="status-dot" aria-hidden="true"></span>Private workspace</span>
+        </div>
+      </div>
+      <main id="main-content" class="main-content">
+        {% include 'includes/messages.html' %}
+        {% block content %}{% endblock %}
+        <footer class="page-footer"><span>Gradebook · A little clarity for your school year.</span><span>Personal tracker · Verify your school’s weighting.</span></footer>
+      </main>
+    </div>
+  </div>
+  {% endblock %}
+</body>
+</html>

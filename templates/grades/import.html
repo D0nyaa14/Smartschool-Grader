@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Import your grades · Gradebook{% endblock %}
+{% block content %}
+<a class="breadcrumb" href="{% url 'grades:dashboard' %}">{% include 'includes/icon.html' with name='back' size='15' %}Back to your subjects</a>
+<div class="page-heading"><div><div class="eyebrow">Bring it all together</div><h1>Import your grades</h1><p class="page-description">Upload a CSV you’re authorized to use. Grades will be added only to your account.</p></div></div>
+<div class="form-layout">
+  <section class="panel" aria-labelledby="import-heading"><div class="panel-heading"><h2 id="import-heading">Choose your CSV file</h2><span class="source-label">CSV import</span></div><div class="panel-body">
+    <p class="muted small">Use UTF-8 text with a header row and one assessment per line. The file is checked before any grades are saved.</p>
+    <pre class="code-example" aria-label="Example CSV with required column names">{{ csv_columns }}
+2026-2027,Mathematics,Algebra quiz,16,20,1,2026-10-01</pre>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}{% include 'includes/form_fields.html' %}<div class="form-actions"><button class="button" type="submit">{% include 'includes/icon.html' with name='upload' size='16' %}Import grades</button><a class="button button-quiet" href="{% url 'grades:dashboard' %}">Cancel</a></div></form>
+  </div></section>
+  <aside class="aside-note"><h3>A quick check before you import</h3><ol><li>Keep only your own grades in the file.</li><li>Use a consistent subject name and school year.</li><li>Check scores and relative assessment weights against your school’s records.</li><li>Use dates in YYYY-MM-DD format and import up to {{ max_rows }} assessments per file.</li></ol><p>Exact duplicate assessments are skipped. A changed score or weight creates a new assessment, so review existing grades before reimporting.</p><p>A school sign-in does not automatically provide grade access. Use an official export or enter your grades manually.</p></aside>
+</div>
+{% endblock %}

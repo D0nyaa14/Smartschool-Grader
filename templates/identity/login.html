@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Welcome · Gradebook{% endblock %}
+{% block body %}
+<div class="login-page">
+  <section class="login-story" aria-label="About Gradebook">
+    <a class="brand" href="{% url 'identity:login' %}"><span class="brand-mark">{% include 'includes/icon.html' with name='book' size='23' %}</span>Gradebook</a>
+    <div class="login-story-content">
+      <div class="eyebrow">Room to see what’s next</div>
+      <h1>Your progress.<br>Your possibilities.<em>Your school year.</em></h1>
+      <p>Bring your grades together, understand your averages, and see what your next result could change.</p>
+      <div class="login-features">
+        <div class="login-feature">{% include 'includes/icon.html' with name='check' size='18' %}All your subjects, one clear view</div>
+        <div class="login-feature">{% include 'includes/icon.html' with name='check' size='18' %}Weighted averages that show the full picture</div>
+        <div class="login-feature">{% include 'includes/icon.html' with name='check' size='18' %}A safe place to explore “what if?”</div>
+      </div>
+    </div>
+    <div class="login-story-footer">A personal tracker for a more confident school year.</div>
+  </section>
+  <main id="main-content" class="login-main">
+    <div class="login-card">
+      <div class="login-icon">{% include 'includes/icon.html' with name='school' size='27' %}</div>
+      <div class="eyebrow">Your private workspace</div>
+      <h2>Welcome to Gradebook</h2>
+      <p class="login-description">Sign in through your school to get started. Your school handles your password; Gradebook never asks for it.</p>
+      {% include 'includes/messages.html' %}
+      {% if sso_enabled %}
+      <form method="post" action="{% url 'identity:school_login' %}">
+        {% csrf_token %}
+        <button class="button button-wide" type="submit">{% include 'includes/icon.html' with name='school' size='18' %}Continue with school account{% include 'includes/icon.html' with name='arrow' size='16' %}</button>
+      </form>
+      <p class="login-help">You’ll continue to your school’s official sign-in page.</p>
+      {% else %}
+      <div class="login-notice"><strong>School sign-in isn’t connected yet.</strong><br>The app owner needs to configure an official school identity provider. No school passwords can be entered here.</div>
+      {% endif %}
+      <div class="divider">YOUR OWN SPACE</div>
+      <a class="button button-secondary button-wide" href="{% url 'grades:guest' %}">Continue as guest{% include 'includes/icon.html' with name='arrow' size='16' %}</a>
+      <p class="login-help">No account needed. Add your own grades in this browser; guest grades stay separate from a school account.</p>
+      {% if demo_enabled %}
+      <div class="divider">EXPLORE THE STARTER</div>
+      <form method="post" action="{% url 'identity:demo_login' %}">
+        {% csrf_token %}
+        <button class="button button-secondary button-wide" type="submit">Open local demo{% include 'includes/icon.html' with name='arrow' size='16' %}</button>
+      </form>
+      <p class="login-help">Try sample grades in a local demo account. This option must be disabled before public deployment.</p>
+      {% endif %}
+      <div class="login-privacy">{% include 'includes/icon.html' with name='lock' size='15' %}<span>School sign-in identifies you. Grades are added separately through manual entry, CSV import, or an authorized school integration.</span></div>
+    </div>
+  </main>
+</div>
+{% endblock %}

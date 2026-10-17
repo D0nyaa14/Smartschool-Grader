@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Add subject · Gradebook{% endblock %}
+{% block content %}
+<a class="breadcrumb" href="{% url 'grades:dashboard' %}">{% include 'includes/icon.html' with name='back' size='15' %}Back to your subjects</a>
+<div class="page-heading"><div><div class="eyebrow">Make room for progress</div><h1>Add a subject</h1><p class="page-description">Start with the subject and school year. You can add your assessments next.</p></div></div>
+<div class="form-layout">
+  <section class="panel" aria-label="Subject details"><div class="panel-heading"><h2>The essentials</h2></div><div class="panel-body"><form method="post">{% csrf_token %}{% include 'includes/form_fields.html' %}<div class="form-actions"><button class="button" type="submit">Add subject{% include 'includes/icon.html' with name='arrow' size='15' %}</button><a class="button button-quiet" href="{% url 'grades:dashboard' %}">Cancel</a></div></form></div></section>
+  <aside class="aside-note"><h3>A clear place for every result</h3><p>Keep the same subject name throughout the school year so your grades stay together.</p><p>After creating your subject, add grades manually or import a CSV with several assessments at once.</p></aside>
+</div>
+{% endblock %}

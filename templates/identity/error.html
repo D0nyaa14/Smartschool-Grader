@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Sign-in issue · Gradebook{% endblock %}
+{% block body %}
+<main id="main-content" class="login-main error-page">
+  <div class="login-card">
+    <a class="brand" href="{% url 'identity:login' %}"><span class="brand-mark">{% include 'includes/icon.html' with name='book' size='23' %}</span>Gradebook</a>
+    <div class="login-description">{% include 'includes/icon.html' with name='lock' size='30' %}</div>
+    <h1>We couldn’t sign you in</h1>
+    <p class="login-description">{{ message|default:'Your sign-in couldn’t be completed. Try again from the sign-in page. If the problem continues, contact the app administrator.' }}</p>
+    <a class="button" href="{% url 'identity:login' %}">{% include 'includes/icon.html' with name='back' size='16' %}Back to sign-in</a>
+    <div class="form-actions"><a class="button button-secondary" href="{% url 'grades:guest' %}">Continue as guest{% include 'includes/icon.html' with name='arrow' size='16' %}</a></div>
+    <p class="login-help">Use your own browser workspace while your school account is being connected. Guest grades stay separate from school sign-in.</p>
+  </div>
+</main>
+{% endblock %}

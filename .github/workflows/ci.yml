@@ -1,0 +1,68 @@
+name: Test and audit
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guest-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      # GitHub's hosted Ubuntu runner includes Node.js. No packages are needed.
+      - run: node --test tests/guest.test.cjs
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    env:
+      DEBUG: "True"
+      ALLOW_DEMO_LOGIN: "False"
+      SECRET_KEY: ci-only-6mS9q2xY4bH7pR1uN8kT3vL5zC0wJ6fA9dE2gQ4sB7hM1oP8
+      APP_BASE_URL: http://127.0.0.1:8000
+      ALLOWED_HOSTS: 127.0.0.1,localhost,testserver
+      OIDC_REDIRECT_URI: http://127.0.0.1:8000/auth/callback/
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py collectstatic --noinput
+      - run: python manage.py test
+      - name: Check production configuration
+        run: python manage.py check --deploy --fail-level ERROR
+        env:
+          DEBUG: "False"
+          APP_BASE_URL: https://grades.school.example
+          ALLOWED_HOSTS: grades.school.example
+          CSRF_TRUSTED_ORIGINS: https://grades.school.example
+          OIDC_REDIRECT_URI: https://grades.school.example/auth/callback/
+          OIDC_ISSUER_URL: https://identity.school.example/school
+          OIDC_CLIENT_ID: ci-placeholder-client
+          OIDC_CLIENT_SECRET: ci-placeholder-secret
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pip-audit==2.10.1
+      - run: python -m pip_audit --no-deps -r requirements.txt

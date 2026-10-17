@@ -1,0 +1,38 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Student data and local databases
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+data/
+backups/
+exports/
+*.csv
+!sample-grades.csv
+*.log
+
+# Python and generated assets
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+staticfiles/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

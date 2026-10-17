@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Manage your data · Gradebook{% endblock %}
+{% block content %}
+<a class="breadcrumb" href="{{ cancel_url }}">{% include 'includes/icon.html' with name='back' size='15' %}Back to your overview</a>
+<div class="page-heading"><div><div class="eyebrow">Your information, your choice</div><h1>Manage your data</h1><p class="page-description">Download your grade records or remove the data you have added.</p></div></div>
+<div class="form-layout">
+  <section class="panel"><div class="panel-heading"><h2>Keep a copy</h2></div><div class="panel-body"><p class="muted small">Download all your subjects and assessments as a CSV file. Keep the export somewhere private.</p><div class="form-actions"><a class="button button-secondary" href="{% url 'grades:export_csv' %}">{% include 'includes/icon.html' with name='download' size='16' %}Export my grades</a></div></div></section>
+  <section class="panel"><div class="panel-heading"><h2>Remove all grade data</h2></div><div class="panel-body"><p class="muted small">This permanently deletes {{ subject_count }} subject{{ subject_count|pluralize }} and {{ assessment_count }} assessment{{ assessment_count|pluralize }} across all school years. Export a copy first if you need one.</p><form method="post">{% csrf_token %}{% if error %}<div class="form-errors" role="alert">{{ error }}</div>{% endif %}<div class="field"><label for="confirmation">Type DELETE to confirm</label><input id="confirmation" name="confirmation" type="text" autocomplete="off" spellcheck="false" required pattern="DELETE" aria-describedby="confirmation-help"><p class="helptext" id="confirmation-help">Your school account will remain active. This removes your grades from Gradebook.</p></div><div class="form-actions"><button class="button button-danger" type="submit">Delete all my grades</button></div></form></div></section>
+</div>
+{% endblock %}

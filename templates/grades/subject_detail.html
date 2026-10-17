@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load l10n %}
+{% block title %}{{ subject.name }} · Gradebook{% endblock %}
+{% block content %}
+<a class="breadcrumb" href="{% url 'grades:dashboard' %}?year={{ subject.year|urlencode }}">{% include 'includes/icon.html' with name='back' size='15' %}Back to your subjects</a>
+<div class="page-heading detail-heading">
+  <div class="subject-intro"><span class="subject-symbol" aria-hidden="true">{{ subject.name|first|upper }}</span><div><div class="eyebrow">{{ subject.year }} · Your subject</div><h1>{{ subject.name }}</h1></div></div>
+  <div class="actions"><a class="button" href="{% url 'grades:grade_create' subject.pk %}">{% include 'includes/icon.html' with name='plus' size='17' %}Add grade</a></div>
+</div>
+<div class="detail-layout">
+  <section class="panel" aria-labelledby="assessments-heading">
+    <div class="panel-heading"><div><h2 id="assessments-heading">Your assessments</h2><p class="section-subtitle">Every result is a step in your progress.</p></div><span class="source-label">{{ assessments|length }} recorded</span></div>
+    {% if assessments %}
+    <div class="table-scroll">
+      <table>
+        <caption class="sr-only">Recorded grades for {{ subject.name }} in {{ subject.year }}</caption>
+        <thead><tr><th scope="col">Assessment</th><th scope="col" class="numeric">Result</th><th scope="col" class="numeric">Weight</th><th scope="col" class="numeric"><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>
+          {% for assessment in assessments %}
+          <tr>
+            <td><strong class="assessment-name">{{ assessment.title }}</strong><span class="assessment-date">{{ assessment.date|date:'j M Y'|default:'No date' }} · {{ assessment.get_source_display }}</span></td>
+            <td class="numeric"><span class="score-pill">{{ assessment.percentage|floatformat:1 }}%</span><span class="assessment-date">{{ assessment.earned|floatformat:'-2' }} / {{ assessment.possible|floatformat:'-2' }}</span></td>
+            <td class="numeric">{{ assessment.weight|floatformat:'-2' }}×</td>
+            <td><div class="table-actions"><a href="{% url 'grades:grade_update' assessment.pk %}">Edit<span class="sr-only"> {{ assessment.title }}</span></a><a class="danger-link" href="{% url 'grades:grade_delete' assessment.pk %}">Remove<span class="sr-only"> {{ assessment.title }}</span></a></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="table-note">Average = sum of each percentage × weight ÷ total weight ({{ total_weight|floatformat:'-2' }}).</p>
+    {% else %}
+    <div class="compact-empty"><div class="empty-icon">{% include 'includes/icon.html' with name='file' size='25' %}</div><h3>Your first result belongs here</h3><p class="simulation-intro">Add an assessment to start tracking your weighted average.</p><a class="button button-secondary" href="{% url 'grades:grade_create' subject.pk %}">Add your first grade</a></div>
+    {% endif %}
+  </section>
+  <aside class="detail-aside" aria-label="Average and future-score simulator">
+    <div class="current-grade"><div><div class="current-grade-label">Your weighted average</div><div class="current-grade-note">Based on recorded grades</div></div><div class="current-grade-value">{% if current_percentage != None %}{{ current_percentage|floatformat:1 }}<span>%</span>{% else %}—<span class="sr-only">No average yet</span>{% endif %}</div></div>
+    <section class="panel" aria-labelledby="simulator-heading">
+      <div class="panel-heading"><h2 id="simulator-heading" class="simulator-heading">{% include 'includes/icon.html' with name='calculator' size='20' %}What’s possible?</h2></div>
+      <div class="panel-body">
+        <p class="simulation-intro">Try up to three future assessments. Use the same relative weights as your recorded grades.</p>
+        <noscript><p class="no-script">Enter future scores and select Calculate to see your projection.</p></noscript>
+        <form method="post" data-simulator data-weighted-total="{{ weighted_total|unlocalize }}" data-total-weight="{{ total_weight|unlocalize }}">
+          {% csrf_token %}
+          {{ future_formset.management_form }}
+          {% if simulator_form.non_field_errors %}<div class="form-errors" role="alert">{{ simulator_form.non_field_errors }}</div>{% endif %}
+          {% if future_formset.non_form_errors %}<div class="form-errors" role="alert">{{ future_formset.non_form_errors }}</div>{% endif %}
+          {% for future_form in future_formset %}
+          <div class="simulation-row-title">Future assessment {{ forloop.counter }}</div>
+          {{ future_form.non_field_errors }}
+          {% for hidden_field in future_form.hidden_fields %}{{ hidden_field }}{% endfor %}
+          <div class="simulation-row">
+            <div class="field">{{ future_form.earned.label_tag }}{{ future_form.earned }}{{ future_form.earned.errors }}</div>
+            <div class="field">{{ future_form.possible.label_tag }}{{ future_form.possible }}{{ future_form.possible.errors }}</div>
+            <div class="field">{{ future_form.weight.label_tag }}{{ future_form.weight }}{{ future_form.weight.errors }}</div>
+          </div>
+          {% endfor %}
+          <div class="field">
+            {{ simulator_form.target_percentage.label_tag }}{{ simulator_form.target_percentage }}{{ simulator_form.target_percentage.errors }}
+            <div class="helptext">An average you’d like to reach, from 0 to 100%.</div>
+          </div>
+          <button class="button button-wide" type="submit">Calculate projection{% include 'includes/icon.html' with name='arrow' size='15' %}</button>
+          <div class="simulation-result" data-live-result hidden aria-live="polite" aria-atomic="true"><div class="simulation-result-label">Live projected average</div><div class="simulation-result-value" data-live-percentage></div><p class="simulation-result-note" data-live-target></p></div>
+        </form>
+        {% if simulation %}
+        <div class="simulation-result" role="status">
+          <div class="simulation-result-label">Calculated projected average</div>
+          <div class="simulation-result-value">{% if simulation.projected_percentage != None %}{{ simulation.projected_percentage|floatformat:2 }}%{% else %}—{% endif %}</div>
+          <p class="simulation-result-note">
+            {% if simulation.status == 'achievable' %}You need a weighted average of <strong>{{ simulation.needed_percentage|floatformat:2 }}%</strong> across these future assessments to reach {{ simulation.target_percentage|floatformat:'-2' }}%.
+            {% elif simulation.status == 'already' %}Your {{ simulation.target_percentage|floatformat:'-2' }}% target is secured for these future weights, even with a 0% future average.
+            {% elif simulation.status == 'impossible' %}This target needs more than 100% across these future weights. Try adding more future assessments or adjusting your target.
+            {% elif simulation.status == 'no_data' %}Add at least one complete future assessment to calculate a projection.
+            {% else %}Your projected average includes the future scores entered above.{% endif %}
+          </p>
+        </div>
+        {% endif %}
+        <p class="simulation-disclaimer">A prediction, not a recorded result. Verify assessment weights and rounding with your school.</p>
+      </div>
+    </section>
+  </aside>
+</div>
+<div class="info-banner">{% include 'includes/icon.html' with name='info' size='18' %}<p>Each result is converted to a percentage before its weight is applied. Your school may use additional rules such as category weighting or dropped grades.</p></div>
+<div class="form-actions"><a class="danger-link small" href="{% url 'grades:subject_delete' subject.pk %}">Remove this subject and its grades</a></div>
+{% endblock %}
